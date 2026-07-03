@@ -1,0 +1,20 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5433/claim_ingestion_dev?TimeZone=UTC
+    username: postgres
+    password: postgres
+  kafka:
+    bootstrap-servers: localhost:9092
+  jpa:
+    show-sql: true
+
+logging:
+  level:
+    com.misinfo: DEBUG
+
+api:
+  key: dev-api-key-123
+
+cors:
+  allowed:
+    origins: http://localhost:5173,http://localhost:3000

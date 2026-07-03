@@ -1,0 +1,143 @@
+version: "3.9"
+
+networks:
+  misinfo-net:
+    driver: bridge
+
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.0
+    container_name: misinfo-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    networks:
+      - misinfo-net
+
+  kafka:
+    image: confluentinc/cp-kafka:7.6.0
+    container_name: misinfo-kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    networks:
+      - misinfo-net
+
+  postgres:
+    image: postgres:16
+    container_name: misinfo-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: misinfo
+      TZ: Asia/Kolkata
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./shared-models/src/main/resources/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ./seed-data.sql:/docker-entrypoint-initdb.d/02-seed.sql
+    networks:
+      - misinfo-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: misinfo-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - misinfo-net
+
+  ml-service:
+    build:
+      context: ./python
+      dockerfile: Dockerfile
+    container_name: misinfo-ml
+    ports:
+      - "8000:8000"
+      - "50051:50051"
+      - "50052:50052"
+    depends_on:
+      - kafka
+    networks:
+      - misinfo-net
+
+  ingestion-service:
+    build:
+      context: .
+      dockerfile: claim-ingestion-service/src/main/docker/Dockerfile
+    container_name: misinfo-ingestion
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/misinfo
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      ML_SERVICE_URL: http://ml-service:8000
+    depends_on:
+      - kafka
+      - postgres
+      - ml-service
+    networks:
+      - misinfo-net
+
+  verification-service:
+    build:
+      context: .
+      dockerfile: verification-service/src/main/docker/Dockerfile
+    container_name: misinfo-verification
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/misinfo
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      PYTHON_VERIFIER_GRPC_HOST: ml-service
+      PYTHON_VERIFIER_GRPC_PORT: 50052
+    depends_on:
+      - kafka
+      - postgres
+      - ml-service
+    networks:
+      - misinfo-net
+
+  flagging-service:
+    build:
+      context: .
+      dockerfile: flagging-service/src/main/docker/Dockerfile
+    container_name: misinfo-flagging
+    ports:
+      - "8083:8083"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/misinfo
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    depends_on:
+      - kafka
+      - postgres
+    networks:
+      - misinfo-net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: misinfo-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - flagging-service
+    networks:
+      - misinfo-net
+
+volumes:
+  pgdata:

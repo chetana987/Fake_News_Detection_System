@@ -1,0 +1,6 @@
+transformers
+torch
+grpcio
+sentence-transformers
+fastapi
+uvicorn

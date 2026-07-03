@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+package misinfo;
+
+service ClaimExtractor {
+    rpc ExtractClaim(ExtractClaimRequest) returns (ClaimEvent);
+}
+
+service Verifier {
+    rpc VerifyClaim(VerifyClaimRequest) returns (VerificationResult);
+}
+
+message ExtractClaimRequest {
+    string text = 1;
+}
+
+message VerifyClaimRequest {
+    string claim_text = 1;
+    repeated string evidence_texts = 2;
+}
+
+message ClaimEvent {
+    string post_id = 1;
+    string claim_text = 2;
+    string subject = 3;
+    string relation = 4;
+    string object = 5;
+    repeated float embedding = 6;
+    double confidence = 7;
+}
+
+message EvidenceMatch {
+    string source = 1;
+    string url = 2;
+    string snippet = 3;
+    double similarity_score = 4;
+    string entailment = 5;
+}
+
+message VerificationResult {
+    string claim_id = 1;
+    double truth_score = 2;
+    double confidence = 3;
+    string verdict = 4;
+    repeated EvidenceMatch evidence_matches = 5;
+    string verified_at = 6;
+}

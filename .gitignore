@@ -1,0 +1,66 @@
+# Java / Maven
+target/
+*.class
+*.jar
+*.war
+*.ear
+*.log
+*.err
+*.pid
+.mvn/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+.project
+.classpath
+.settings/
+*.sublime-*
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Node / Frontend
+node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/*.tsbuildinfo
+frontend/src/generated/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+python/*.egg-info/
+python/dist/
+python/build/
+python/venv/
+python/.venv/
+python/*_pb2.py
+python/*_pb2_grpc.py
+python/generated/
+
+# Docker
+pgdata/
+
+# Environment
+.env
+.env.*
+!.env.example
+*.pem
+
+# Logs
+logs/
+*.out
+
+# Protobuf generated
+verification-service/target/generated-sources/
+
+# Temp
+org/
+C:\Users\mahaj\AppData\Local\Temp\opencode\*
