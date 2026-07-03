@@ -147,6 +147,6 @@ docker compose up --build -d
 └── seed-data.sql              # Sample claims for testing
 ```
 
-## License
+---
 
-MIT
+*Project by Chetana Mahajan*
